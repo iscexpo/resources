@@ -1,0 +1,31 @@
+{
+  "name": "threatcode-resources",
+  "version": "1.0.0",
+  "description": "Security research resources for AI/LLM safety by ThreatCode Information Security",
+  "license": "CC-BY-4.0",
+  "scripts": {
+    "validate": "node scripts/validate.js",
+    "build:taxonomy": "node scripts/build-taxonomy.js",
+    "serve:context": "npx serve context -l 8080",
+    "serve:taxonomy": "npx serve taxonomy/docs -l 8081",
+    "lint:md": "markdownlint '**/*.md' --ignore node_modules",
+    "lint:html": "htmlhint '**/*.html' --ignore node_modules",
+    "lint": "npm run lint:md && npm run lint:html",
+    "test": "npm run validate"
+  },
+  "keywords": [
+    "security",
+    "ai",
+    "llm",
+    "anti-patterns",
+    "prompt-injection",
+    "taxonomy",
+    "threatcode"
+  ],
+  "author": "ThreatCode Information Security",
+  "devDependencies": {
+    "htmlhint": "^1.1.0",
+    "markdownlint-cli": "^0.40.0",
+    "serve": "^14.2.0"
+  }
+}

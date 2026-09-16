@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Markdown files
+        run: |
+          echo "Checking for .DS_Store files..."
+          if find . -name ".DS_Store" -not -path "./.git/*" | grep .; then
+            echo "ERROR: .DS_Store files found"
+            exit 1
+          fi
+          echo "Checking for broken links..."
+          if grep -r "hhttps://" . --include="*.html" --include="*.md" --exclude-dir=.git --exclude-dir=scripts --exclude-dir=.github 2>/dev/null; then
+            echo "ERROR: Broken links found"
+            exit 1
+          fi
+          echo "All validations passed!"
+
+      - name: Validate JSON data
+        run: |
+          if [ -f taxonomy/docs/data/taxonomy.json ]; then
+            python3 -c "import json; json.load(open('taxonomy/docs/data/taxonomy.json'))" 2>/dev/null || \
+            node -e "JSON.parse(require('fs').readFileSync('taxonomy/docs/data/taxonomy.json'))" && \
+            echo "taxonomy.json is valid"
+          fi
+
+      - name: Check file sizes
+        run: |
+          echo "Checking for excessively large files..."
+          find . -not -path "./.git/*" -type f -size +500k | while read f; do
+            echo "Large file: $f ($(wc -c < "$f") bytes)"
+          done
+
+      - name: Check for placeholder secrets
+        run: |
+          echo "Scanning for potential hardcoded secrets..."
+          if grep -rE '(sk_live_|sk_test_|AKIA|AIza|password123|secret_key)' . --include="*.md" --include="*.html" --include="*.js" --include="*.json" --include="*.yml" --exclude-dir=.git 2>/dev/null; then
+            echo "WARNING: Potential secret patterns found (may be examples)"
+          fi

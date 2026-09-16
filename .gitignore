@@ -1,0 +1,38 @@
+# OS files
+.DS_Store
+.DS_Store?
+._*
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+dist/
+build/
+.site/
+.jekyll-cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Misc
+*.log
+*.tmp
+*.bak
+Thumbs.db
+
+# Large data files (generated/kept in data/)
+taxonomy.js

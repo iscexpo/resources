@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>resources/context | AI Code Security Anti-Patterns</title>
+    <meta name="description" content="AI Code Security Anti-Patterns distilled from 150+ sources to help LLMs generate safer code.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #06060c;
+            --bg-primary: #0a0914;
+            --bg-secondary: #10101e;
+            --bg-card: #161628;
+            --bg-card-hover: #1e1e38;
+            --bg-code: #0d0d1a;
+            --text-primary: #f0ecff;
+            --text-secondary: #a89cc8;
+            --text-muted: #6b5f8a;
+            --accent-red: #ff4d6a;
+            --accent-orange: #ff8c42;
+            --accent-yellow: #ffd166;
+            --accent-green: #06d6a0;
+            --accent-blue: #4dabf7;
+            --accent-purple: #9775fa;
+            --accent-cyan: #22d3ee;
+            --accent-pink: #ec4899;
+            --gradient-1: linear-gradient(135deg, #ff4d6a 0%, #ff8c42 100%);
+            --gradient-2: linear-gradient(135deg, #4dabf7 0%, #9775fa 100%);
+            --gradient-security: linear-gradient(135deg, #ff4d6a 0%, #9775fa 50%, #4dabf7 100%);
+            --border-color: rgba(139, 92, 246, 0.15);
+            --border-strong: rgba(139, 92, 246, 0.3);
+            --glow-purple: 0 0 40px rgba(139, 92, 246, 0.2);
+            --glow-red: 0 0 40px rgba(255, 77, 106, 0.2);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-deep);
+            background-image:
+                radial-gradient(ellipse 80% 60% at 10% 20%, rgba(151, 117, 250, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 90% 80%, rgba(255, 77, 106, 0.04) 0%, transparent 60%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(139, 92, 246, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.025) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== Navigation ===== */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            padding: 1rem 0;
+            background: rgba(6, 6, 12, 0.85);
+            backdrop-filter: blur(24px) saturate(1.5);
+            -webkit-backdrop-filter: blur(24px) saturate(1.5);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+        }
+        nav .container { display: flex; justify-content: space-between; align-items: center; }
+
+        .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.4rem; }
+        .logo-icon {
+            width: 32px; height: 32px;
+            background: var(--gradient-security);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 16px rgba(151, 117, 250, 0.3);
+        }
+        .logo-icon svg { width: 20px; height: 20px; fill: white; }
+        .logo-text {
+            background: var(--gradient-security);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a { color: var(--text-secondary); text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: color var(--transition-fast); }
+        .nav-links a:hover { color: var(--text-primary); }
+
+        .github-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 18px; background: var(--bg-card);
+            border: 1px solid var(--border-color); border-radius: var(--radius-md);
+            color: var(--text-primary); text-decoration: none; font-weight: 500;
+            font-size: 0.85rem; transition: all var(--transition-normal);
+        }
+        .github-btn:hover { background: var(--bg-card-hover); border-color: var(--accent-purple); transform: translateY(-1px); }
+        .github-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+        /* ===== Hero ===== */
+        .hero { padding: 160px 0 80px; text-align: center; position: relative; z-index: 1; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 16px; background: rgba(255, 77, 106, 0.08);
+            border: 1px solid rgba(255, 77, 106, 0.2);
+            border-radius: 100px; color: var(--accent-red);
+            font-size: 0.8rem; font-weight: 600; margin-bottom: 1.5rem;
+        }
+        .hero-badge::before {
+            content: ''; width: 6px; height: 6px; background: var(--accent-red);
+            border-radius: 50%; animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .hero h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem; }
+        .hero h1 .gradient-text {
+            background: var(--gradient-security);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .hero-subtitle { font-size: 1.2rem; color: var(--text-secondary); max-width: 650px; margin: 0 auto 2.5rem; line-height: 1.7; }
+        .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 28px; border-radius: var(--radius-md);
+            font-weight: 600; text-decoration: none; transition: all var(--transition-normal);
+            cursor: pointer; border: none; font-size: 0.95rem;
+        }
+        .btn-primary {
+            background: var(--gradient-1); color: white;
+            box-shadow: var(--glow-red);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(255, 77, 106, 0.35); }
+        .btn-secondary {
+            background: var(--bg-card); color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover { background: var(--bg-card-hover); border-color: var(--accent-blue); transform: translateY(-2px); }
+
+        /* ===== Stats ===== */
+        .stats { padding: 60px 0; position: relative; z-index: 1; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; max-width: 1000px; margin: 0 auto; }
+        .stat-card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 2rem; text-align: center;
+            transition: all var(--transition-normal); backdrop-filter: blur(8px);
+        }
+        .stat-card:hover { transform: translateY(-4px); border-color: var(--accent-purple); box-shadow: var(--glow-purple); }
+        .stat-value { font-size: 2.5rem; font-weight: 800; background: var(--gradient-2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-label { color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem; }
+
+        /* ===== Code Slider ===== */
+        .code-examples { padding: 80px 0; position: relative; z-index: 1; overflow: hidden; }
+        .slider-container { position: relative; max-width: 850px; margin: 0 auto; }
+        .slider-track { display: flex; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .slide { min-width: 100%; padding: 0 16px; }
+        .code-card {
+            background: var(--bg-code); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); overflow: hidden;
+        }
+        .code-card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 20px; background: var(--bg-card); border-bottom: 1px solid var(--border-color);
+        }
+        .code-card-title { display: flex; align-items: center; gap: 12px; }
+        .code-card-title .icon { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+        .code-card-title .icon.bad { background: rgba(255, 77, 106, 0.15); color: var(--accent-red); }
+        .code-card-title .icon.good { background: rgba(6, 214, 160, 0.15); color: var(--accent-green); }
+        .code-card-title h4 { font-size: 1rem; font-weight: 600; }
+        .cwe-badge { font-family: var(--font-mono); font-size: 0.72rem; padding: 4px 10px; background: rgba(151, 117, 250, 0.1); color: var(--accent-purple); border-radius: 100px; }
+        .code-block { padding: 20px; overflow-x: auto; }
+        .code-block pre { font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.7; margin: 0; }
+        .code-block .comment { color: var(--text-muted); }
+        .code-block .bad-code { color: var(--accent-red); }
+        .code-block .good-code { color: var(--accent-green); }
+        .code-block .keyword { color: var(--accent-purple); }
+        .code-block .string { color: var(--accent-yellow); }
+        .code-block .function { color: var(--accent-blue); }
+
+        .slider-nav { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2rem; }
+        .slider-btn {
+            width: 44px; height: 44px; border-radius: 50%; background: var(--bg-card);
+            border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all var(--transition-normal);
+        }
+        .slider-btn:hover { background: var(--bg-card-hover); border-color: var(--accent-blue); transform: scale(1.05); }
+        .slider-dots { display: flex; gap: 8px; }
+        .slider-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-color); cursor: pointer; transition: all var(--transition-normal); }
+        .slider-dot.active { background: var(--accent-red); transform: scale(1.3); }
+
+        /* ===== Problem Section ===== */
+        .problem { padding: 80px 0; position: relative; z-index: 1; }
+        .section-header { text-align: center; margin-bottom: 4rem; }
+        .section-header h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 1rem; }
+        .section-header p { color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+        .problem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 1100px; margin: 0 auto; }
+        .problem-card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 2rem; text-align: center;
+            transition: all var(--transition-normal); position: relative; overflow: hidden;
+        }
+        .problem-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gradient-1); opacity: 0; transition: opacity var(--transition-normal); }
+        .problem-card:hover { border-color: var(--accent-red); transform: translateY(-3px); }
+        .problem-card:hover::before { opacity: 1; }
+        .problem-card .value { font-size: 2.2rem; font-weight: 800; color: var(--accent-red); }
+        .problem-card .label { color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem; }
+        .problem-card .source { color: var(--text-muted); font-size: 0.75rem; margin-top: 1rem; }
+
+        /* ===== Top 10 ===== */
+        .top-patterns { padding: 80px 0; position: relative; z-index: 1; }
+        .patterns-table { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; max-width: 1100px; margin: 0 auto; }
+        .pattern-row { display: grid; grid-template-columns: 50px 1fr 100px 1fr; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); transition: background var(--transition-fast); }
+        .pattern-row:last-child { border-bottom: none; }
+        .pattern-row:hover { background: var(--bg-card-hover); }
+        .pattern-row.header { background: rgba(255, 77, 106, 0.04); font-weight: 600; color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .pattern-rank { font-family: var(--font-mono); font-weight: 700; font-size: 1.2rem; }
+        .pattern-rank.rank-1 { color: var(--accent-red); }
+        .pattern-rank.rank-2 { color: var(--accent-orange); }
+        .pattern-rank.rank-3 { color: var(--accent-yellow); }
+        .pattern-name { font-weight: 600; }
+        .pattern-score { font-family: var(--font-mono); background: rgba(151, 117, 250, 0.08); color: var(--accent-purple); padding: 4px 12px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; width: fit-content; }
+        .pattern-stat { color: var(--text-secondary); font-size: 0.85rem; }
+
+        /* ===== Architecture ===== */
+        .architecture { padding: 80px 0; position: relative; z-index: 1; }
+        .arch-diagram { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 3rem; display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; max-width: 800px; margin: 0 auto; }
+        .arch-box { background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem 2rem; text-align: center; min-width: 180px; transition: all var(--transition-normal); }
+        .arch-box.highlight { border-color: var(--accent-green); box-shadow: 0 0 30px rgba(6, 214, 160, 0.15); }
+        .arch-box h4 { font-size: 1rem; margin-bottom: 0.3rem; }
+        .arch-box p { color: var(--text-muted); font-size: 0.75rem; }
+        .arch-arrow { font-size: 2rem; color: var(--accent-blue); }
+
+        /* ===== Sources ===== */
+        .sources { padding: 80px 0; position: relative; z-index: 1; }
+        .sources-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 1100px; margin: 0 auto; }
+        .source-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 2rem; transition: all var(--transition-normal); }
+        .source-card:hover { transform: translateY(-3px); border-color: var(--accent-blue); box-shadow: var(--glow-purple); }
+        .source-icon { width: 44px; height: 44px; background: var(--gradient-2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1rem; }
+        .source-card h4 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .source-card p { color: var(--text-secondary); font-size: 0.85rem; }
+
+        /* ===== Files ===== */
+        .files { padding: 80px 0; position: relative; z-index: 1; }
+        .files-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; max-width: 800px; margin: 0 auto; }
+        .file-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 2rem; transition: all var(--transition-normal); }
+        .file-card:hover { border-color: var(--accent-green); transform: translateY(-3px); }
+        .file-card h4 { font-family: var(--font-mono); font-size: 1.1rem; color: var(--accent-green); margin-bottom: 0.5rem; }
+        .file-card .size { display: inline-block; background: rgba(6, 214, 160, 0.08); color: var(--accent-green); padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.75rem; }
+        .file-card p { color: var(--text-secondary); font-size: 0.9rem; }
+
+        /* ===== Footer ===== */
+        footer { padding: 60px 0; border-top: 1px solid var(--border-color); text-align: center; position: relative; z-index: 1; }
+        footer .logo { justify-content: center; margin-bottom: 1rem; }
+        footer p { color: var(--text-muted); font-size: 0.85rem; }
+        footer a { color: var(--accent-blue); text-decoration: none; }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 968px) {
+            .stats-grid, .problem-grid, .sources-grid { grid-template-columns: repeat(2, 1fr); }
+            .hero h1 { font-size: 2.5rem; }
+            .pattern-row { grid-template-columns: 40px 1fr 80px; }
+            .pattern-stat { display: none; }
+            .nav-links { display: none; }
+        }
+        @media (max-width: 640px) {
+            .stats-grid, .problem-grid, .sources-grid, .files-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2rem; }
+            .hero { padding: 130px 0 60px; }
+            .arch-diagram { flex-direction: column; }
+            .arch-arrow { transform: rotate(90deg); }
+            .code-block pre { font-size: 0.72rem; }
+        }
+
+        /* ===== Animations ===== */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .stat-card, .problem-card, .source-card, .file-card { opacity: 0; animation: fadeInUp 0.6s ease forwards; }
+        .stat-card:nth-child(1) { animation-delay: 0.05s; }
+        .stat-card:nth-child(2) { animation-delay: 0.1s; }
+        .stat-card:nth-child(3) { animation-delay: 0.15s; }
+        .stat-card:nth-child(4) { animation-delay: 0.2s; }
+
+        /* ===== Reduced Motion ===== */
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                </div>
+                <span class="logo-text">resources/context</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#examples">Examples</a></li>
+                <li><a href="#problem">The Problem</a></li>
+                <li><a href="#patterns">Top 10</a></li>
+                <li><a href="#sources">Sources</a></li>
+                <li><a href="#files">Files</a></li>
+            </ul>
+            <a href="https://github.com/threatcode/resources/context" class="github-btn">
+                <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                View on GitHub
+            </a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-badge">Security Research Project</div>
+            <h1><span class="gradient-text">resources/context</span></h1>
+            <p class="hero-subtitle">AI Code Security Anti-Patterns distilled from 150+ sources to help LLMs generate safer code. Use as context for AI assistants or deploy as a standalone security review agent.</p>
+            <div class="hero-cta">
+                <a href="#files" class="btn btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    the Files
+                </a>
+                <a href="#examples" class="btn btn-secondary">See Examples</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value">150+</div><div class="stat-label">Sources Analyzed</div></div>
+                <div class="stat-card"><div class="stat-value">25+</div><div class="stat-label">Anti-Patterns</div></div>
+                <div class="stat-card"><div class="stat-value">40+</div><div class="stat-label">CVEs Documented</div></div>
+                <div class="stat-card"><div class="stat-value">165K</div><div class="stat-label">Tokens of Reference</div></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="code-examples" id="examples">
+        <div class="container">
+            <div class="section-header">
+                <h2>Anti-Pattern Examples</h2>
+                <p>Real security vulnerabilities AI commonly generates, with secure alternatives.</p>
+            </div>
+            <div class="slider-container">
+                <div class="slider-track" id="sliderTrack">
+                    <div class="slide">
+                        <div class="code-card">
+                            <div class="code-card-header">
+                                <div class="code-card-title">
+                                    <div class="icon bad">!</div>
+                                    <h4>Hardcoded Secrets</h4>
+                                </div>
+                                <span class="cwe-badge">CWE-798</span>
+                            </div>
+                            <div class="code-block"><pre><span class="comment">// PSEUDOCODE</span>
+
+<span class="comment">// BAD: Hardcoded API keys</span>
+<span class="bad-code">CONSTANT API_KEY = "sk-abcd1234efgh5678"
+CONSTANT DB_PASSWORD = "super_secret_password"</span>
+
+<span class="keyword">FUNCTION</span> <span class="function">call_api</span>(endpoint):
+    headers = {<span class="string">"Authorization"</span>: <span class="string">"Bearer "</span> + API_KEY}
+    <span class="keyword">RETURN</span> http.get(endpoint, headers)
+
+<span class="comment">// GOOD: Environment variables</span>
+<span class="keyword">FUNCTION</span> <span class="function">call_api</span>(endpoint):
+    api_key = environment.get("API_KEY")
+    <span class="keyword">IF</span> api_key <span class="keyword">IS NULL</span>:
+        <span class="keyword">THROW</span> Error(<span class="string">"API_KEY required"</span>)
+    headers = {<span class="string">"Authorization"</span>: <span class="string">"Bearer "</span> + api_key}
+    <span class="keyword">RETURN</span> http.get(endpoint, headers)</pre></div>
+                        </div>
+                    </div>
+                    <div class="slide">
+                        <div class="code-card">
+                            <div class="code-card-header">
+                                <div class="code-card-title">
+                                    <div class="icon bad">!</div>
+                                    <h4>SQL Injection</h4>
+                                </div>
+                                <span class="cwe-badge">CWE-89</span>
+                            </div>
+                            <div class="code-block"><pre><span class="comment">// PSEUDOCODE</span>
+
+<span class="comment">// BAD: String concatenation</span>
+<span class="keyword">FUNCTION</span> <span class="function">get_user</span>(user_id):
+    query = "SELECT * FROM users WHERE id = " + user_id
+    <span class="keyword">RETURN</span> database.execute(query)
+
+<span class="comment">// Attack: "1 OR 1=1 --"</span>
+<span class="comment">// Result: Returns ALL users!</span>
+
+<span class="comment">// GOOD: Parameterized queries</span>
+<span class="keyword">FUNCTION</span> <span class="function">get_user</span>(user_id):
+    query = "SELECT * FROM users WHERE id = ?"
+    <span class="keyword">RETURN</span> database.execute(query, [user_id])</pre></div>
+                        </div>
+                    </div>
+                    <div class="slide">
+                        <div class="code-card">
+                            <div class="code-card-header">
+                                <div class="code-card-title">
+                                    <div class="icon bad">!</div>
+                                    <h4>Cross-Site Scripting (XSS)</h4>
+                                </div>
+                                <span class="cwe-badge">CWE-79</span>
+                            </div>
+                            <div class="code-block"><pre><span class="comment">// PSEUDOCODE</span>
+
+<span class="comment">// BAD: Direct HTML injection (86% AI failure rate!)</span>
+<span class="keyword">FUNCTION</span> <span class="function">display_comment</span>(comment):
+    <span class="bad-code">element.innerHTML = comment</span>
+
+<span class="comment">// Attack: "&lt;script&gt;steal(cookies)&lt;/script&gt;"</span>
+
+<span class="comment">// GOOD: Encode output for context</span>
+<span class="keyword">FUNCTION</span> <span class="function">display_comment</span>(comment):
+    <span class="good-code">element.textContent = comment</span>
+    <span class="comment">// Or use HTML encoding function</span>
+    <span class="good-code">element.innerHTML = html_encode(comment)</span></pre></div>
+                        </div>
+                    </div>
+                    <div class="slide">
+                        <div class="code-card">
+                            <div class="code-card-header">
+                                <div class="code-card-title">
+                                    <div class="icon bad">!</div>
+                                    <h4>Command Injection</h4>
+                                </div>
+                                <span class="cwe-badge">CWE-78</span>
+                            </div>
+                            <div class="code-block"><pre><span class="comment">// PSEUDOCODE</span>
+
+<span class="comment">// BAD: Shell command with user input</span>
+<span class="keyword">FUNCTION</span> <span class="function">ping_host</span>(hostname):
+    <span class="bad-code">command = "ping -c 4 " + hostname
+    RETURN shell.execute(command)</span>
+
+<span class="comment">// Attack: "google.com; rm -rf /"</span>
+
+<span class="comment">// GOOD: Use argument arrays, avoid shell</span>
+<span class="keyword">FUNCTION</span> <span class="function">ping_host</span>(hostname):
+    <span class="good-code">IF NOT is_valid_hostname(hostname):
+        THROW Error("Invalid hostname")
+    RETURN process.spawn("ping", ["-c", "4", hostname])</span></pre></div>
+                        </div>
+                    </div>
+                    <div class="slide">
+                        <div class="code-card">
+                            <div class="code-card-header">
+                                <div class="code-card-title">
+                                    <div class="icon bad">!</div>
+                                    <h4>Weak Password Storage</h4>
+                                </div>
+                                <span class="cwe-badge">CWE-327</span>
+                            </div>
+                            <div class="code-block"><pre><span class="comment">// PSEUDOCODE</span>
+
+<span class="comment">// BAD: Plaintext or weak hashing</span>
+<span class="keyword">FUNCTION</span> <span class="function">save_password</span>(password):
+    <span class="bad-code">database.insert({password: password})</span>  <span class="comment">// Plaintext!</span>
+    <span class="bad-code">database.insert({password: md5(password)})</span>  <span class="comment">// Weak!</span>
+
+<span class="comment">// GOOD: bcrypt/argon2 with proper cost</span>
+<span class="keyword">FUNCTION</span> <span class="function">save_password</span>(password):
+    <span class="good-code">hashed = bcrypt.hash(password, cost=12)
+    database.insert({password_hash: hashed})</span></pre></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slider-nav">
+                    <button class="slider-btn" id="prevBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <div class="slider-dots" id="sliderDots">
+                        <div class="slider-dot active" data-index="0"></div>
+                        <div class="slider-dot" data-index="1"></div>
+                        <div class="slider-dot" data-index="2"></div>
+                        <div class="slider-dot" data-index="3"></div>
+                        <div class="slider-dot" data-index="4"></div>
+                    </div>
+                    <button class="slider-btn" id="nextBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="problem" id="problem">
+        <div class="container">
+            <div class="section-header">
+                <h2>The Security Problem is Real</h2>
+                <p>AI-generated code has significantly higher vulnerability rates than human-written code.</p>
+            </div>
+            <div class="problem-grid">
+                <div class="problem-card"><div class="value">86%</div><div class="label">XSS Failure Rate in AI Code</div><div class="source">Veracode 2025</div></div>
+                <div class="problem-card"><div class="value">2.74x</div><div class="label">More Likely to Have XSS vs Human Code</div><div class="source">CodeRabbit Study</div></div>
+                <div class="problem-card"><div class="value">81%</div><div class="label">of Orgs Ship Vulnerable AI Code</div><div class="source">Checkmarx Report</div></div>
+                <div class="problem-card"><div class="value">72%</div><div class="label">Java AI Code Has Vulnerabilities</div><div class="source">Veracode 2025</div></div>
+                <div class="problem-card"><div class="value">5-21%</div><div class="label">Package Hallucination Rate</div><div class="source">USENIX Study</div></div>
+                <div class="problem-card"><div class="value">75.8%</div><div class="label">Devs Wrongly Trust AI Security</div><div class="source">Snyk Survey</div></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="top-patterns" id="patterns">
+        <div class="container">
+            <div class="section-header">
+                <h2>Top 10 Anti-Patterns</h2>
+                <p>Ranked by Priority Score = (Frequency x 2) + (Severity x 2) + Detectability</p>
+            </div>
+            <div class="patterns-table">
+                <div class="pattern-row header"><div>Rank</div><div>Anti-Pattern</div><div>Score</div><div>Key Statistic</div></div>
+                <div class="pattern-row"><div class="pattern-rank rank-1">#1</div><div class="pattern-name">Dependency Risks (Slopsquatting)</div><div class="pattern-score">24</div><div class="pattern-stat">5-21% of AI packages don't exist</div></div>
+                <div class="pattern-row"><div class="pattern-rank rank-2">#2</div><div class="pattern-name">XSS Vulnerabilities</div><div class="pattern-score">23</div><div class="pattern-stat">86% failure rate in AI code</div></div>
+                <div class="pattern-row"><div class="pattern-rank rank-3">#3</div><div class="pattern-name">Hardcoded Secrets</div><div class="pattern-score">23</div><div class="pattern-stat">Scraped within minutes of exposure</div></div>
+                <div class="pattern-row"><div class="pattern-rank">#4</div><div class="pattern-name">SQL Injection</div><div class="pattern-score">22</div><div class="pattern-stat">Thousands of instances in training data</div></div>
+                <div class="pattern-row"><div class="pattern-rank">#5</div><div class="pattern-name">Authentication Failures</div><div class="pattern-score">22</div><div class="pattern-stat">75.8% false confidence in AI auth</div></div>
+                <div class="pattern-row"><div class="pattern-rank">#6</div><div class="pattern-name">Missing Input Validation</div><div class="pattern-score">21</div><div class="pattern-stat">Root cause of all injection attacks</div></div>
+                <div class="pattern-row"><div class="pattern-rank">#7</div><div class="pattern-name">Command Injection</div><div class="pattern-score">21</div><div class="pattern-stat">CVE-2025-53773 real-world RCE</div></div>
+                <div class="pattern-row"><div class="pattern-rank">#8</div><div class="pattern-name">Missing Rate Limiting</div><div class="pattern-score">20</div><div class="pattern-stat">Very high frequency, easy to detect</div></div>
+                <div class="pattern-row"><div class="pattern-rank">#9</div><div class="pattern-name">Excessive Data Exposure</div><div class="pattern-score">20</div><div class="pattern-stat">APIs return full objects</div></div>
+                <div class="pattern-row"><div class="pattern-rank">#10</div><div class="pattern-name">Unrestricted File Upload</div><div class="pattern-score">20</div><div class="pattern-stat">Critical severity, enables RCE</div></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="architecture" id="architecture">
+        <div class="container">
+            <div class="section-header">
+                <h2>Recommended Architecture</h2>
+                <p>Deploy resources/context as a security review agent between AI generation and production.</p>
+            </div>
+            <div class="arch-diagram">
+                <div class="arch-box"><h4>AI Code Gen</h4><p>Copilot, Claude, GPT</p></div>
+                <div class="arch-arrow">&#8594;</div>
+                <div class="arch-box highlight"><h4>resources/context Agent</h4><p>Security Review</p></div>
+                <div class="arch-arrow">&#8594;</div>
+                <div class="arch-box"><h4>Secure Code</h4><p>Production-ready</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="sources" id="sources">
+        <div class="container">
+            <div class="section-header">
+                <h2>Research Sources</h2>
+                <p>Synthesized from 150+ individual sources across 6 primary categories.</p>
+            </div>
+            <div class="sources-grid">
+                <div class="source-card"><div class="source-icon">&#128451;</div><h4>CVE Databases</h4><p>NVD, MITRE CWE, Wiz - 40+ CVEs including IDEsaster collection</p></div>
+                <div class="source-card"><div class="source-icon">&#128218;</div><h4>Academic Research</h4><p>Stanford, ACM, arXiv, IEEE, USENIX - Empirical vulnerability studies</p></div>
+                <div class="source-card"><div class="source-icon">&#128221;</div><h4>Security Blogs</h4><p>Dark Reading, Veracode, Snyk, Checkmarx, OWASP</p></div>
+                <div class="source-card"><div class="source-icon">&#128172;</div><h4>Developer Forums</h4><p>HackerNews (17+ threads), Reddit (6 subreddits)</p></div>
+                <div class="source-card"><div class="source-icon">&#128038;</div><h4>Social Media</h4><p>Twitter/X security researchers - Real-time incidents</p></div>
+                <div class="source-card"><div class="source-icon">&#128025;</div><h4>GitHub</h4><p>Security advisories, academic studies, code analysis</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="files" id="files">
+        <div class="container">
+            <div class="section-header">
+                <h2>The Files</h2>
+                <p>Large files by design - comprehensive security references for AI consumption.</p>
+            </div>
+            <div class="files-grid">
+                <div class="file-card">
+                    <h4>ANTI_PATTERNS_BREADTH.md</h4>
+                    <span class="size">~65K tokens</span>
+                    <p>Full coverage of 25+ patterns. Quick reference format with BAD/GOOD examples for each vulnerability type.</p>
+                </div>
+                <div class="file-card">
+                    <h4>ANTI_PATTERNS_DEPTH.md</h4>
+                    <span class="size">~100K tokens</span>
+                    <p>Deep-dive on 7 critical patterns. Multiple examples, attack scenarios, edge cases, and complete mitigations.</p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="https://github.com/threatcode/resources/context" class="btn btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    Download from GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                </div>
+                <span class="logo-text">resources/context</span>
+            </div>
+            <p>AI Code Security Anti-Patterns distilled from 150+ sources.</p>
+            <p style="margin-top: 0.5rem;"><em>Because AI shouldn't keep making the same security mistakes.</em></p>
+        </div>
+    </footer>
+
+    <script>
+        // Slider functionality
+        const track = document.getElementById('sliderTrack');
+        const dots = document.querySelectorAll('.slider-dot');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        let currentSlide = 0;
+        const totalSlides = 5;
+
+        function goToSlide(index) {
+            if (index < 0) index = totalSlides - 1;
+            if (index >= totalSlides) index = 0;
+            currentSlide = index;
+            track.style.transform = `translateX(-${currentSlide * 100}%)`;
+            dots.forEach((dot, i) => { dot.classList.toggle('active', i === currentSlide); });
+        }
+
+        prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
+        nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
+        dots.forEach(dot => { dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.index))); });
+        setInterval(() => goToSlide(currentSlide + 1), 6000);
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Scroll animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('.stat-card, .problem-card, .source-card, .file-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'all 0.6s ease-out';
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>
