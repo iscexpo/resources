@@ -74,6 +74,3 @@ This work is licensed under the [Creative Commons Attribution 4.0 International 
 
 This project synthesizes findings from 150+ sources across CVE databases, academic research, security blogs, developer forums, and GitHub security advisories.
 
----
-
-**Built by ThreatCode Information Security** · [Jason Haddix](https://threatcode.github.io)
