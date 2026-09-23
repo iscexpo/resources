@@ -10,10 +10,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Skip to taxonomy</a>
     <header class="main-header">
         <div class="header-inner">
             <div class="logo-section">
-                <div class="logo-icon-wrap">
+                <div class="logo-icon-wrap" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                         <path d="M2 17l10 5 10-5"/>
@@ -53,7 +54,7 @@
     <nav class="filter-nav">
         <div class="filter-inner">
             <div class="search-box">
-                <input type="text" id="search-input" placeholder="Search taxonomy entries...">
+                <input type="search" id="search-input" placeholder="Search taxonomy entries..." aria-label="Search taxonomy entries">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/>
                     <path d="M21 21l-4.35-4.35"/>
@@ -77,8 +78,18 @@
         </div>
     </nav>
 
-    <main class="main-content">
-        <div class="legend">
+    <main class="main-content" id="main-content">
+        <section class="intro-panel" aria-labelledby="intro-title">
+            <div class="intro-copy">
+                <p class="eyebrow">AI security field guide <span aria-hidden="true">/</span> v1.6.1</p>
+                <h2 id="intro-title">Map the attack surface before you test the model.</h2>
+                <p>Browse a practical vocabulary for prompt injection research, from attacker intent to delivery path and evasion strategy.</p>
+            </div>
+            <div class="intro-mark" aria-hidden="true">
+                <span></span><span></span><span></span>
+            </div>
+        </section>
+        <div class="legend" aria-label="Taxonomy legend">
             <span class="legend-item"><span class="delivery-dot delivery-direct"></span> Direct</span>
             <span class="legend-item"><span class="delivery-dot delivery-indirect"></span> Indirect</span>
             <span class="legend-item"><span class="delivery-dot delivery-both"></span> Either</span>
